@@ -56,16 +56,26 @@ class BarcodeInputService : InputMethodService(), ZXingScannerView.ResultHandler
         super.onFinishInput()
         scannerView?.stopCamera()
     }
+    
+    private fun extractCodeFromText(text: String): String {
+        val pattern = Pattern.compile("component/([A-Z0-9-]+)")
+        val matcher = pattern.matcher(text)
+        if (matcher.find()) {
+            return matcher.group(1)
+        }
+        return ""
+    }
 
     override fun handleResult(rawResult: Result) {
+        val extractedCode = extractCodeFromText(rawResult.text)
         scannerView?.resumeCameraPreview(this)
-        if (rawResult.text == lastText && System.currentTimeMillis() - lastTime < 5000) {
+        if (extractedCode == lastText && System.currentTimeMillis() - lastTime < 5000) {
             return
         }
-        lastText = rawResult.text
+        lastText = extractedCode
         lastTime = System.currentTimeMillis()
         currentInputConnection.also { ic: InputConnection ->
-            ic.commitText(rawResult.text, 1)
+            ic.commitText(extractedCode, 1)
         }
     }
 }
